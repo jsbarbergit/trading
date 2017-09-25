@@ -1,4 +1,4 @@
-Date,EOD_Price,6_day_avg,21_day_avg,20_day_low
+Date,EOD_Price,low_day_avg,high_day_avg,low_day_price
 24-Jan-17,1.0728,1.06913333333,1.06102857143,1.0499
 25-Jan-17,1.0748,1.07086666667,1.06247619048,1.0526
 26-Jan-17,1.0679,1.0724,1.06366190476,1.0526

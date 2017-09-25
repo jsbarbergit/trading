@@ -77,7 +77,7 @@ for Symbol, Date, Open, High, Low, Close, Volume in datafile:
 #Count is number of records - loop through and write out
 out_file = open(outfile, "w")
 #Write a header 
-out_file.write("Date,EOD_Price," + str(lowerrange) + "_day_avg," + str(higherrange) + "_day_avg," + str(low_price) + "_day_low\n")
+out_file.write("Date,EOD_Price,low_day_avg,high_day_avg,low_day_price\n")
 
 for i in range(data_count):
     outstr = str(date_array[i]) + "," + str(price_array[i]) + "," + str(lower_array[i]) + "," + str(higher_array[i]) + "," + str(lowprice_array[i] + "\n")
