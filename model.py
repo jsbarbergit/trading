@@ -23,6 +23,8 @@ for Date,EOD_Price,low_day_avg,high_day_avg,low_day_price in infile:
     data_rows_count += 1
 #Record position
 position='NONE'
+trade_price=''
+auto_stop=''
 for i in range(data_rows_count): 
     #Check for BUY Signal
     #Was todays 6 day avg greater than the 21 day avg
@@ -34,19 +36,33 @@ for i in range(data_rows_count):
             #If we have no position - BUY
             if position is 'NONE':
                 position='LONG'
-                print("\tBUYING - New Position: " + position)
+                #Record Buy Price and 20 day low(auto stop price)
+                trade_price=eodprice_array[i]
+                auto_stop=lowprice_array[i]
+                print("\tBUYING - New Position: " + position + " Buy Price: " + trade_price + "  AutoStop: " + auto_stop)
             #If we are short - Sell
             #TODO - Is this correct? or do we hold our nerve?
             elif position is 'SHORT':
                 position='NONE'
-                print("\t Getting Out - New Position: " + position)
+                #Calculate Result
+                if eodprice_array[i] < trade_price:
+                    result = "LOSS"
+                else:
+                    result = "WIN"
+                print("\t Getting Out - Result: " + result + " - New Position: " + position)
             #Otherwise we already have a long position - do nothing
             #Should never get here so log for debug
             else:
                 print("WELL SOMETHING SEEMS WRONG - We have a " + position + " already ???")
-        #No significant events - stay as is
+        #No significant events - stay as is unless auto stop hit
         else:
-            print("Retain " + position + " Position on " + date_array[i])
+            if eodprice_array[i] <= auto_stop:
+                #Oh Dear - we're out
+                position = 'NONE'
+                print("AUTO STOP. Buy Price: " + trade_price + " AutoStop: " + auto_stop + "     YOU LOSE :(")
+            else:
+                print("Retain " + position + " Position on " + date_array[i])
+
     #Check for SELL Signal
     elif lowavg_array[i] < highavg_array[i]:
         #Potential short signal if yesterday it crossed over today
@@ -55,16 +71,29 @@ for i in range(data_rows_count):
             #Do we have any position on this market? If not short
             if position is 'NONE':
                 position='SHORT'
-                print("\t SHORTING - New Position: " + position)
+                #Record Short Price and 20 day low for use as auto stop
+                trade_price=eodprice_array[i]
+                auto_stop=lowprice_array[i]
+                print("\t SHORTING - New Position: " + position + " Short Price: " + trade_price + "  AutoStop: " + auto_stop)
             #Already short - so get the hell outta dodge
             elif position is 'LONG':
                 position = 'NONE'
-                print("\t Getting Out - New Position: " + position)
+                #Calculate Result
+                if eodprice_array[i] < trade_price:
+                    result = "LOSS"
+                else:
+                    result = "WIN"
+                print("\t Getting Out Result: " + result + " - New Position: " + position)
             #Hmmm shouldn't have got here
             else:
                 print("WELL SOMETHING SEEMS WRONG - We have a " + position + " already ???")
         #No significant events - stay as is
         else:
-            print("Retain " + position + " Position on " + date_array[i])
+            if eodprice_array[i] <= auto_stop:
+                #Oh Dear - we're out
+                position = 'NONE'
+                print("AUTO STOP. Short Price: " + trade_price + " AutoStop: " + auto_stop + "     YOU LOSE :(")
+            else:
+                print("Retain " + position + " Position on " + date_array[i])
     else:
         print("No signal for: " + date_array[i] + " Current Position: " + position)  
