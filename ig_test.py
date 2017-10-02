@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 # FX Markets to trade
 fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD','EURJPY','GBPEUR','USDCHF','EURCHF']
-
+#fxmajmkts=['GBPUSD']
 # Get Config
 with open(sys.argv[1]) as config_file:
     config = json.load(config_file)
@@ -47,7 +47,9 @@ for mkt in fxmajmkts:
   # Daily Low Price
   daily_low_array = []
 
-  prices_file='results/' + mkt + "-" + str(today) + ".csv"
+  #prices_file='results/' + mkt + "-" + str(today) + ".csv"
+  #prices_file=sys.argv[2]
+  prices_file='results/' + mkt + "-" + str(today-timedelta(days=1)) + ".csv"
   prices_file_csv = csv.reader(open(prices_file), delimiter=",")
 
   # first line is the header - pass over this
@@ -62,7 +64,7 @@ for mkt in fxmajmkts:
     daily_high_array.insert(count, High)
     daily_low_array.insert(count,Low)
     # Increase counter
-    count =+ 1
+    count += 1
 
   # Store period high and low values
   # We have more data points than for required period (to calc previous long/short term avgs)
@@ -71,20 +73,19 @@ for mkt in fxmajmkts:
   period_low_price = min(daily_low_array[(data_days - int(config['short_avg_days'])):len(daily_low_array)])
 
   # Get yesterdays period avgs
-  y_eod_sum = sum(float(yles) for yles in eod_close_array[((data_days - int(config['long_avg_days']))-1):int(config['long_avg_days'])])
-  y_long_period_price_avg = y_eod_sum / int(config['long_avg_days'])
-  y_short_period_price_avg = y_eod_sum / int(config['short_avg_days'])
-  print('eod_close_array: ' + str(eod_close_array))
-  print('start_pos: ' + str((data_days - int(config['long_avg_days']))-1))
-  print('end_pos: ' + str(int(config['long_avg_days'])))
-  print('y_eod_sum: ' + str(y_eod_sum))
-  print('MKT: ' + mkt + ' Yesterdays longterm avg: ' + str(y_long_period_price_avg) + ' and shortterm avg: ' + str(y_short_period_price_avg))
+  # need to offset by 1 day so - length of array -1
+  y_eod_long_sum = sum(float(yles) for yles in eod_close_array[((len(eod_close_array) - int(config['long_avg_days'])) - 1):len(eod_close_array) - 1])
+  y_long_period_price_avg = y_eod_long_sum / int(config['long_avg_days'])
+  y_eod_short_sum = sum(float(yles) for yles in eod_close_array[((len(eod_close_array) - int(config['short_avg_days'])) - 1):len(eod_close_array) - 1])
+  y_short_period_price_avg = y_eod_short_sum / int(config['short_avg_days'])
+  #print('MKT: ' + mkt + ' Yesterdays longterm avg: ' + str(y_long_period_price_avg) + ' and shortterm avg: ' + str(y_short_period_price_avg))
 
   # Get todays period avgs, eg 21 day avg and 6 day avg
-  eod_sum = sum(float(les) for les in eod_close_array[(data_days - int(config['long_avg_days'])):int(config['long_avg_days'])])
-  long_period_price_avg = eod_sum / int(config['long_avg_days'])
-  short_period_price_avg = eod_sum / int(config['short_avg_days'])
-  print('MKT: ' + mkt + ' Todays longterm avg: ' + str(long_period_price_avg) + ' and shortterm avg: ' + str(short_period_price_avg))
+  eod_long_sum = sum(float(yles) for yles in eod_close_array[((len(eod_close_array) - int(config['long_avg_days']))):len(eod_close_array)])
+  long_period_price_avg = eod_long_sum / int(config['long_avg_days'])
+  eod_short_sum = sum(float(yles) for yles in eod_close_array[((len(eod_close_array) - int(config['short_avg_days']))):len(eod_close_array)])
+  short_period_price_avg = eod_short_sum / int(config['short_avg_days'])
+  #print('MKT: ' + mkt + ' Todays longterm avg: ' + str(long_period_price_avg) + ' and shortterm avg: ' + str(short_period_price_avg))
 
   # Check for Buy signal - is todays short term (eg 6days) avg > long term (eg 21days)
   if short_period_price_avg  > long_period_price_avg:
@@ -95,6 +96,8 @@ for mkt in fxmajmkts:
         + str(config['long_avg_days']) + ' day avg price (' + str(long_period_price_avg) + ').')
       print('Latest EOD price: ' + str(eod_close_array[data_days]))
       print('If you are currently SHORT ' + mkt + ' then recommend you close the trade')
+    else:
+      nosignal = 1
   # Check for Sell signal - is todays short term avg < long term avg
   elif short_period_price_avg  > long_period_price_avg:  
     # Only if this wasnt true yesterday
@@ -104,6 +107,10 @@ for mkt in fxmajmkts:
         + str(config['long_avg_days']) + ' day avg price (' + str(long_period_price_avg) + ').')
       print('Latest EOD price: ' + str(eod_close_array[data_days]))
       print('If you are currently LONG ' + mkt + ' then recommend you close the trade')
-  else:
+    else:
+      nosignal = 1
+  
+  #If no signal - log it
+  if nosignal > 0:
     print('No signals for ' + mkt)
 
