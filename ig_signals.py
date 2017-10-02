@@ -6,7 +6,10 @@ from requests.auth import HTTPDigestAuth
 from datetime import datetime, timedelta
 
 # FX Markets to trade
-fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD','EURJPY','GBPEUR','USDCHF','EURCHF']
+fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD',
+  'EURJPY','GBPEUR','USDCHF','EURCHF','GBPJPY','GBPCHF','CADJPY',
+  'GBPCAD','EURCAD','CHFJPY','CADCHF','GBPZAR','USDSGD','USDZAR',
+  'GBPSGD','SGDJPY','EURSGD','EURZAR']
 
 # Get Config
 with open(sys.argv[1]) as config_file:
@@ -40,7 +43,12 @@ today=datetime.now().date()
 # Calc the start date
 # Also need to add 1 more historical point to be bale to calc yesterdays long(21) and short(6) day avgs
 start_date=today - timedelta(days=(data_days))
-print('Fetching data for ' + str(data_days) + ' days')
+#print('Fetching data for ' + str(data_days) + ' days')
+# Flag or buy/sell signal
+nosignal=0
+#API Call Allowance - 500 per week
+api_allowance=0
+
 
 # API Lookup for data
 for mkt in fxmajmkts:
@@ -51,12 +59,13 @@ for mkt in fxmajmkts:
   prices_file_csv.close()
   # Fetch data for given range
   prices_payload= {"resolution": "DAY", "from": str(start_date), "to": str(today), "pageSize": str(data_days)}        
-  print('GET API Call Payload Data: ' + str(prices_payload))
+  #print('GET API Call Payload Data: ' + str(prices_payload))
   epic="CS.D." + mkt + ".TODAY.IP"
   prices_uri="https://api.ig.com/gateway/deal/prices/" + epic
   prices_headers={"Content-Type": "application/json;charset=UTF-8", "Accept": "application/json; charset=UTF-8", "X-IG-API-KEY": str(config["key"]), "Version": "3", "X-SECURITY-TOKEN": sec_token, "CST": cst }
   price_response = requests.get(prices_uri, params=prices_payload, headers=prices_headers)
   print(mkt + ' Price Lookup Response: ' + str(price_response) )
+  api_allowance = price_response.json()['metadata']['allowance']['remainingAllowance']
 
   # loop through returned dictionary and populate csv file for historical record
   prices_file_csv=open(prices_file, 'a')
@@ -78,9 +87,9 @@ for mkt in fxmajmkts:
     output_line=(mkt + ',' + str(pdate) + ',' + str(popen) + ',' + str(pdayhigh) + ',' + str(pdaylow) + ',' + str(peod) + ',' + str(pvolume) +'\n')
     prices_file_csv.write(output_line)
   prices_file_csv.close()
-  print('No. of pages: ' + str(price_response.json()['metadata']['pageData']['totalPages']))
-  print('Page size: ' + str(price_response.json()['metadata']['pageData']['pageSize']))
-  print('No. of prices: ' + str(len(price_response.json()['prices'] ) ))
+#  print('No. of pages: ' + str(price_response.json()['metadata']['pageData']['totalPages']))
+#  print('Page size: ' + str(price_response.json()['metadata']['pageData']['pageSize']))
+#  print('No. of prices: ' + str(len(price_response.json()['prices'] ) ))
 
 # Analyze Data
 
@@ -142,7 +151,7 @@ for mkt in fxmajmkts:
       print('BUY Signal for ' + mkt + ' ' 
         + str(config['short_avg_days']) + ' day avg price (' + str(short_period_price_avg) + ') was greater than '
         + str(config['long_avg_days']) + ' day avg price (' + str(long_period_price_avg) + ').')
-      print('Latest EOD price: ' + str(eod_close_array[data_days]))
+      print('Latest EOD price: ' + str(len(eod_close_array)))
       print('If you are currently SHORT ' + mkt + ' then recommend you close the trade')
     else:
       nosignal = 1
@@ -153,7 +162,7 @@ for mkt in fxmajmkts:
       print('SELL Signal for ' + mkt + ' ' 
         + str(config['short_avg_days']) + ' day avg price (' + str(short_period_price_avg) + ') was lower than '
         + str(config['long_avg_days']) + ' day avg price (' + str(long_period_price_avg) + ').')
-      print('Latest EOD price: ' + str(eod_close_array[data_days]))
+      print('Latest EOD price: ' + str(len(eod_close_array)))
       print('If you are currently LONG ' + mkt + ' then recommend you close the trade')
     else:
       nosignal = 1
@@ -161,9 +170,10 @@ for mkt in fxmajmkts:
   # No signal - log it
   if nosignal > 0:
     print('No signals for ' + mkt)
-
+print('Remaining API Call Allowance: ' + str(api_allowance))
 # Logout
 logout_uri="https://api.ig.com/gateway/deal/session"
 logout_headers={"Content-Type": "application/json;charset=UTF-8", "Accept": "application/json; charset=UTF-8", "X-IG-API-KEY": str(config["key"]), "Version": "1", "X-SECURITY-TOKEN": sec_token, "CST": cst, "_method": "DELETE", "IG-ACCOUNT-ID": accountId, "IG-ACCOUNT-TYPE": accountType }
 logout_response = requests.get(logout_uri, headers=logout_headers, data={})
 print('LOGOUT Response: ' + str(logout_response))
+print('Remaining API Call Allowance: ' + str(api_allowance))
