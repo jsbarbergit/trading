@@ -57,11 +57,13 @@ for i in range(data_rows_count):
         #No significant events - stay as is unless auto stop hit
         else:
             if eodprice_array[i] <= auto_stop:
-                #Oh Dear - we're out
-                position = 'NONE'
-                print("AUTO STOP. Buy Price: " + trade_price + " AutoStop: " + auto_stop + "     YOU LOSE :(")
+                #Do we have an open position?
+                if position is not 'NONE':
+                  #Oh Dear - we're out
+                  position = 'NONE'
+                  print("AUTO STOP. Buy Price: " + trade_price + " AutoStop: " + auto_stop + "     YOU LOSE :(")
             else:
-                print("Retain " + position + " Position on " + date_array[i])
+                print("Retain " + position + " Position on " + date_array[i] + ' EOD Proce: ' + eodprice_array[i])
 
     #Check for SELL Signal
     elif lowavg_array[i] < highavg_array[i]:
@@ -90,10 +92,12 @@ for i in range(data_rows_count):
         #No significant events - stay as is
         else:
             if eodprice_array[i] <= auto_stop:
-                #Oh Dear - we're out
-                position = 'NONE'
-                print("AUTO STOP. Short Price: " + trade_price + " AutoStop: " + auto_stop + "     YOU LOSE :(")
+                #Do we have an open position?
+                if position is not 'NONE':
+                  #Oh Dear - we're out
+                  position = 'NONE'
+                  print("AUTO STOP. Short Price: " + trade_price + " AutoStop: " + auto_stop + "     YOU LOSE :(")
             else:
-                print("Retain " + position + " Position on " + date_array[i])
+                print("Retain " + position + " Position on " + date_array[i] + ' EOD Price: ' + eodprice_array[i])
     else:
         print("No signal for: " + date_array[i] + " Current Position: " + position)  

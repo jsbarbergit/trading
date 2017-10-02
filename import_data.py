@@ -34,42 +34,35 @@ headerline = datafile.next()
 
 #Loop through and build arrays
 count = 0
-data_count = 0
 for Symbol, Date, Open, High, Low, Close, Volume in datafile:
     close_array.insert(count,Close) 
         
-    #If we are above higher range - start adding to arrays - add 1 to account for header line 
-    if count > higherrange + 1:
+    #Add dates and closing prices
+    date_array.insert(count,Date) 
+    price_array.insert(count,Close) 
 
-        #Add dates and closing prices
-        date_array.insert(count,Date) 
-        price_array.insert(count,Close) 
+    #Get running higher range daily avg
+    hstart_pos = count
+    higheravg = close_array[hstart_pos:count]
+    _hsum = sum(float(hf) for hf in higheravg)
+    _hlen = len(higheravg)
+    higher_avg = _hsum / _hlen
+    higher_array.insert(count, higher_avg)
 
-        #Get running higher range daily avg
-        hstart_pos = count - higherrange
-        higheravg = close_array[hstart_pos:count]
-        _hsum = sum(float(hf) for hf in higheravg)
-        _hlen = len(higheravg)
-        higher_avg = _hsum / _hlen
-        higher_array.insert(count, higher_avg)
+    #Add lower range avg
+    #calculate lower daily avg 
+    lstart_pos = count
+    loweravg = close_array[lstart_pos:count] 
+    _lsum = sum(float(lf) for lf in loweravg)
+    _llen = len(loweravg)
+    lower_avg = _lsum / _llen 
+    lower_array.insert(count, lower_avg)
 
-        #Add lower range avg
-        #calculate lower daily avg 
-        lstart_pos = count - lowerrange
-        loweravg = close_array[lstart_pos:count] 
-        _lsum = sum(float(lf) for lf in loweravg)
-        _llen = len(loweravg)
-        lower_avg = _lsum / _llen 
-        lower_array.insert(count, lower_avg)
-
-        #Get the lowest price for the last low_price days - used to calculate auto stop
-        pstart_pos = count - low_price
-        lowpricelist = close_array[pstart_pos:count]
-        _low = min(lowpricelist)
-        lowprice_array.insert(count, _low)
-
-        #Increment our data_count(er)
-        data_count += 1
+    #Get the lowest price for the last low_price days - used to calculate auto stop
+    pstart_pos = count - low_price
+    lowpricelist = close_array[pstart_pos:count]
+    _low = min(lowpricelist)
+    lowprice_array.insert(count, _low)
 
     #Increase the counter
     count += 1
@@ -79,7 +72,7 @@ out_file = open(outfile, "w")
 #Write a header 
 out_file.write("Date,EOD_Price,low_day_avg,high_day_avg,low_day_price\n")
 
-for i in range(data_count):
+for i in range(count):
     outstr = str(date_array[i]) + "," + str(price_array[i]) + "," + str(lower_array[i]) + "," + str(higher_array[i]) + "," + str(lowprice_array[i] + "\n")
     out_file.write(outstr)
 out_file.close()
