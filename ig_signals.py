@@ -6,11 +6,8 @@ from requests.auth import HTTPDigestAuth
 from datetime import datetime, timedelta
 
 # FX Markets to trade
-fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD',
-  'EURJPY','GBPEUR','USDCHF','EURCHF','GBPJPY','GBPCHF','CADJPY',
-  'GBPCAD','EURCAD','CHFJPY','CADCHF','GBPZAR','USDSGD','USDZAR',
-  'GBPSGD','SGDJPY','EURSGD','EURZAR']
-
+fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD','EURJPY','GBPEUR','USDCHF','EURCHF']
+fxminmkts=[,'GBPJPY','GBPCHF','CADJPY','GBPCAD','EURCAD','CHFJPY','CADCHF','GBPZAR','USDSGD','USDZAR','GBPSGD','SGDJPY','EURSGD','EURZAR']
 # Get Config
 with open(sys.argv[1]) as config_file:
     config = json.load(config_file)
