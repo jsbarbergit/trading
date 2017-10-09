@@ -110,7 +110,6 @@ for mkt in fxmajmkts:
   prices_file_csv=csv.reader(open(prices_file), delimiter=",")
 
 
-  print('Checking mkt: '  + mkt )
   # first line is the header - pass over this
   headerline = prices_file_csv.next()
   # Loop through and build arrays
@@ -181,4 +180,3 @@ logout_uri="https://api.ig.com/gateway/deal/session"
 logout_headers={"Content-Type": "application/json;charset=UTF-8", "Accept": "application/json; charset=UTF-8", "X-IG-API-KEY": str(config["key"]), "Version": "1", "X-SECURITY-TOKEN": sec_token, "CST": cst, "_method": "DELETE", "IG-ACCOUNT-ID": accountId, "IG-ACCOUNT-TYPE": accountType }
 logout_response = requests.get(logout_uri, headers=logout_headers, data={})
 print('LOGOUT Response: ' + str(logout_response))
-print('Remaining API Call Allowance: ' + str(api_allowance))
