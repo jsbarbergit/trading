@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 # FX Markets to trade
 fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD','EURJPY','GBPEUR','USDCHF','EURCHF']
-fxminmkts=[,'GBPJPY','GBPCHF','CADJPY','GBPCAD','EURCAD','CHFJPY','CADCHF','GBPZAR','USDSGD','USDZAR','GBPSGD','SGDJPY','EURSGD','EURZAR']
+fxminmkts=['GBPJPY','GBPCHF','CADJPY','GBPCAD','EURCAD','CHFJPY','CADCHF','GBPZAR','USDSGD','USDZAR','GBPSGD','SGDJPY','EURSGD','EURZAR']
 # Get Config
 with open(sys.argv[1]) as config_file:
     config = json.load(config_file)
@@ -103,9 +103,14 @@ for mkt in fxmajmkts:
   # Daily Low Price
   daily_low_array = []
 
+  #No Signal indicator
+  nosignal = 0
+
   prices_file='results/' + mkt + "-" + str(today) + ".csv"
   prices_file_csv=csv.reader(open(prices_file), delimiter=",")
 
+
+  print('Checking mkt: '  + mkt )
   # first line is the header - pass over this
   headerline = prices_file_csv.next()
   # Loop through and build arrays
@@ -163,6 +168,9 @@ for mkt in fxmajmkts:
       print('If you are currently LONG ' + mkt + ' then recommend you close the trade')
     else:
       nosignal = 1
+  else:
+    #No Signals
+    nosignal = 1
   
   # No signal - log it
   if nosignal > 0:

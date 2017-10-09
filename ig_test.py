@@ -7,10 +7,22 @@ from datetime import datetime, timedelta
 
 # FX Markets to trade
 fxmajmkts=['GBPUSD','EURUSD','USDJPY','EURGBP','AUDUSD','USDCAD','EURJPY','GBPEUR','USDCHF','EURCHF']
-#fxmajmkts=['GBPUSD']
+fxminmkts=['GBPJPY','GBPCHF','CADJPY','GBPCAD','EURCAD','CHFJPY','CADCHF','GBPZAR','USDSGD','USDZAR','GBPSGD','SGDJPY','EURSGD','EURZAR']
 # Get Config
 with open(sys.argv[1]) as config_file:
     config = json.load(config_file)
+
+# Login
+ig_url="https://api.ig.com/gateway/deal/session"
+body = '{ "identifier": "' + config["user"] + '", "password": "' + config["pass"] + '", "encryptedPassword": null }'
+response = requests.post(config["uri"], data=body,headers={"Content-Type": "application/json;charset=UTF-8", "Accept": "application/json; charset=UTF-8", "X-IG-API-KEY": config["key"], "Version": "2" })
+accountId=str(response.json()['currentAccountId'])
+accountType=str(response.json()['accountType'])
+sec_token=response.headers['X-SECURITY-TOKEN']
+cst=response.headers['CST']
+print('LOGIN Response: ' + str(response))
+
+
 
 # Get the data
 
@@ -19,6 +31,7 @@ with open(sys.argv[1]) as config_file:
 long_avg=int(config['long_avg_days'])
 short_avg=int(config['short_avg_days'])
 limit_avg=int(config['limit_avg'])
+data_days = int(config['days_of_data'])
 # How many whole weeks included - we'll add this figure on for our saturday count (non trading day) - add 1 just in case of rounding down 
 # may result in 1 extra data point being returned but no harm
 nontradingdays=(long_avg / 7) + 1
@@ -26,11 +39,14 @@ nontradingdays=(long_avg / 7) + 1
 today=datetime.now().date()
 # Calc the start date
 # Also need to add 1 more historical point to be bale to calc yesterdays long(21) and short(6) day avgs
-data_days = long_avg + nontradingdays + 1
 start_date=today - timedelta(days=(data_days))
-print('Fetching data for ' + str(data_days) + ' days')
+#print('Fetching data for ' + str(data_days) + ' days')
+# Flag or buy/sell signal
+nosignal=0
+#API Call Allowance - 500 per week
+api_allowance=0
 
-# API Lookup for data
+
 
 # Analyze Data
 
@@ -47,11 +63,14 @@ for mkt in fxmajmkts:
   # Daily Low Price
   daily_low_array = []
 
-  #prices_file='results/' + mkt + "-" + str(today) + ".csv"
-  #prices_file=sys.argv[2]
-  prices_file='results/' + mkt + "-" + str(today-timedelta(days=1)) + ".csv"
-  prices_file_csv = csv.reader(open(prices_file), delimiter=",")
+  #No Signal
+  nosignal = 0
 
+  prices_file='results/' + mkt + "-" + str(today) + ".csv"
+  prices_file_csv=csv.reader(open(prices_file), delimiter=",")
+
+
+  print('Checking mkt: '  + mkt )
   # first line is the header - pass over this
   headerline = prices_file_csv.next()
   # Loop through and build arrays
@@ -64,7 +83,7 @@ for mkt in fxmajmkts:
     daily_high_array.insert(count, High)
     daily_low_array.insert(count,Low)
     # Increase counter
-    count += 1
+    count =+ 1
 
   # Store period high and low values
   # We have more data points than for required period (to calc previous long/short term avgs)
@@ -78,7 +97,7 @@ for mkt in fxmajmkts:
   y_long_period_price_avg = y_eod_long_sum / int(config['long_avg_days'])
   y_eod_short_sum = sum(float(yles) for yles in eod_close_array[((len(eod_close_array) - int(config['short_avg_days'])) - 1):len(eod_close_array) - 1])
   y_short_period_price_avg = y_eod_short_sum / int(config['short_avg_days'])
-  #print('MKT: ' + mkt + ' Yesterdays longterm avg: ' + str(y_long_period_price_avg) + ' and shortterm avg: ' + str(y_short_period_price_avg))
+  print('MKT: ' + mkt + ' Yesterdays longterm avg: ' + str(y_long_period_price_avg) + ' and shortterm avg: ' + str(y_short_period_price_avg))
 
   # Get todays period avgs, eg 21 day avg and 6 day avg
   eod_long_sum = sum(float(yles) for yles in eod_close_array[((len(eod_close_array) - int(config['long_avg_days']))):len(eod_close_array)])
@@ -94,7 +113,7 @@ for mkt in fxmajmkts:
       print('BUY Signal for ' + mkt + ' ' 
         + str(config['short_avg_days']) + ' day avg price (' + str(short_period_price_avg) + ') was greater than '
         + str(config['long_avg_days']) + ' day avg price (' + str(long_period_price_avg) + ').')
-      print('Latest EOD price: ' + str(eod_close_array[data_days]))
+      print('Latest EOD price: ' + str(len(eod_close_array)))
       print('If you are currently SHORT ' + mkt + ' then recommend you close the trade')
     else:
       nosignal = 1
@@ -105,12 +124,14 @@ for mkt in fxmajmkts:
       print('SELL Signal for ' + mkt + ' ' 
         + str(config['short_avg_days']) + ' day avg price (' + str(short_period_price_avg) + ') was lower than '
         + str(config['long_avg_days']) + ' day avg price (' + str(long_period_price_avg) + ').')
-      print('Latest EOD price: ' + str(eod_close_array[data_days]))
+      print('Latest EOD price: ' + str(len(eod_close_array)))
       print('If you are currently LONG ' + mkt + ' then recommend you close the trade')
     else:
       nosignal = 1
+  else:
+    #No Signal
+    nosignal = 1
   
-  #If no signal - log it
+  # No signal - log it
   if nosignal > 0:
     print('No signals for ' + mkt)
-
